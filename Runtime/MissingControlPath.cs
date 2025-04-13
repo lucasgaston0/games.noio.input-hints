@@ -19,7 +19,7 @@ namespace games.noio.InputHints
         public MissingControlPath(string controlPath, ControlType controlType)
         {
             _controlPath = controlPath;
-            _controlScheme = controlType.InputControlScheme;
+            _controlScheme = controlType.SpriteAssets[0].SpriteCategory;
         }
 
         #region PROPERTIES
@@ -31,7 +31,7 @@ namespace games.noio.InputHints
 
         public bool Matches(string controlPath, ControlType controlType)
         {
-            return controlPath == _controlPath && controlType.InputControlScheme == _controlScheme;
+            return controlPath == _controlPath && controlType.SpriteAssets[0].SpriteCategory == _controlScheme;
         }
     }
 }
