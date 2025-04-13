@@ -88,7 +88,7 @@ namespace games.noio.InputHints
                 return $"[{action.name}]";
             }
 
-            var path = action.bindings[bindingIndex].path;
+            var path = action.bindings[bindingIndex].effectivePath;
 
             InputControlPath.ToHumanReadableString(path, out _, out var controlPath);
 
@@ -170,7 +170,7 @@ namespace games.noio.InputHints
                 return $"[{action.name}]";
             }
 
-            var path = action.bindings[bindingIndex].path;
+            var path = action.bindings[bindingIndex].effectivePath;
 
             InputControlPath.ToHumanReadableString(path, out _, out var controlPath);
 
