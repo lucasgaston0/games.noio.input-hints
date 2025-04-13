@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using TMPro;
 using UnityEditor;
 using UnityEngine;
@@ -31,6 +32,11 @@ namespace games.noio.InputHints
         Dictionary<Guid, InputActionVariable> _generatedVariables;
         ControlType _usedControlType;
 
+        ControlType _lastControllerType;
+        ControlType _keyboardMouseControlType;
+
+
+
         #region PROPERTIES
 
         public InputActionAsset InputActions => _inputActions;
@@ -42,6 +48,14 @@ namespace games.noio.InputHints
         void OnEnable()
         {
             InputHints.UsedDeviceChanged += HandleUsedDeviceChanged;
+
+            _keyboardMouseControlType = _controlTypes.FirstOrDefault((x) => x.DeviceMatcher.IsMatch(("Keyboard")));
+
+            Debug.Log("KeyboardControlTypeDevice: " + _keyboardMouseControlType.InputControlScheme);
+
+            _lastControllerType = _controlTypes.FirstOrDefault(x => string.IsNullOrEmpty(x.Devices));
+
+            Debug.Log("_lastControllerType: " + _lastControllerType.InputControlScheme);
         }
 
         void OnDisable()
@@ -128,6 +142,81 @@ namespace games.noio.InputHints
             return $"[{controlPath}]";
         }
 
+
+        public string GetSprite(InputAction action, bool isController)
+        {
+            if (_usedControlType == null || _usedControlType.IsEmpty)
+            {
+                _usedControlType = GetControlType(InputHints.UsedDevice);
+            }
+
+            int bindingIndex;
+
+            if (isController)
+            {
+                bindingIndex = action.GetBindingIndex(_lastControllerType.InputControlScheme);
+            }
+            else
+            {
+                bindingIndex = action.GetBindingIndex(_keyboardMouseControlType.InputControlScheme);
+            }
+
+            if (bindingIndex <= -1)
+            {
+#if UNITY_EDITOR
+                Debug.LogWarning($"No binding found for \"{action.name}\" " +
+                                 $"with Control Scheme \"{_usedControlType.InputControlScheme}\"", this);
+#endif
+                return $"[{action.name}]";
+            }
+
+            var path = action.bindings[bindingIndex].path;
+
+            InputControlPath.ToHumanReadableString(path, out _, out var controlPath);
+
+            foreach (var sprite in _sprites)
+            {
+                if (sprite.ControlPath == controlPath)
+                {
+                    SpriteCategoryToAssetMapping asset = null;
+
+                    if (isController)
+                    {
+                        asset = _lastControllerType.SpriteAssets.FirstOrDefault(
+                            m => m.SpriteCategory == sprite.SpriteCategory);
+                    }
+                    else
+                    {
+                        asset = _keyboardMouseControlType.SpriteAssets.FirstOrDefault(
+                            m => m.SpriteCategory == sprite.SpriteCategory);
+                    }
+
+                    if (asset == null)
+                    {
+                        continue;
+                    }
+
+                    return string.Format(_spriteFormat, asset.SpriteAsset.name, sprite.SpriteName);
+                }
+            }
+
+#if UNITY_EDITOR
+            Debug.LogWarning($"[No sprite found for \"{controlPath}\"]", this);
+
+            var controlType = isController ? _lastControllerType : _keyboardMouseControlType;
+
+            if (_missingControlPaths.Any(mcp => mcp.Matches(controlPath, controlType)) == false)
+            {
+                Debug.Log("Adding missing control path entry");
+                _missingControlPaths.Add(new MissingControlPath(controlPath, controlType));
+                Debug.Log("Adding missing control path : => " + controlType);
+                EditorUtility.SetDirty(this);
+            }
+#endif
+
+            return $"[{controlPath}]";
+        }
+
         void PrintBinding(InputAction action, int bindingIndex)
         {
             var binding = action.bindings[bindingIndex];
@@ -166,6 +255,10 @@ namespace games.noio.InputHints
         void HandleUsedDeviceChanged(InputDevice inputDevice)
         {
             _usedControlType = GetControlType(inputDevice);
+
+            if(_usedControlType.InputControlScheme.Equals("Gamepad"))
+                _lastControllerType = _usedControlType;
+
             Changed?.Invoke();
         }
 
@@ -259,7 +352,7 @@ namespace games.noio.InputHints
 
             var category = FindCategoryFor(spriteName, controlScheme);
 
-            var mapping = _sprites.FirstOrDefault(m => m.ControlPath == controlPath);
+            var mapping = _sprites.FirstOrDefault(m => m.ControlPath == controlPath && m.SpriteCategory == controlScheme);
             if (mapping == null)
             {
                 mapping = new ControlPathToSpriteMapping(controlPath, spriteName, category);
@@ -288,7 +381,7 @@ namespace games.noio.InputHints
 
             foreach (var controlType in _controlTypes)
             {
-                if (controlType.InputControlScheme != controlScheme)
+                if (controlType.SpriteAssets[0].SpriteCategory != controlScheme)
                 {
                     continue;
                 }
