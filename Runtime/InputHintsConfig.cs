@@ -1,6 +1,7 @@
 // (C)2024 @noio_games
 // Thomas van den Berg
 
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -88,7 +89,7 @@ namespace games.noio.InputHints
                 return $"[{action.name}]";
             }
 
-            var path = action.bindings[bindingIndex].effectivePath;
+            var path = action.bindings[bindingIndex].path;
 
             InputControlPath.ToHumanReadableString(path, out _, out var controlPath);
 
@@ -215,6 +216,54 @@ namespace games.noio.InputHints
 #endif
 
             return $"[{controlPath}]";
+        }
+
+        public string GetSpriteComposite(InputAction action, string composite)
+        {
+            List<string> tempComposite = new();
+
+            foreach (var binding in action.bindings)
+            {
+                if (new Regex("Keyboard&Mouse").IsMatch(binding.groups))
+                {
+                    InputControlPath.ToHumanReadableString(binding.effectivePath, out _, out var controlPath);
+                    tempComposite.Add(controlPath);
+                }
+            }
+
+            List<string> resultingComposite = new();
+
+            foreach (var singleComposite in tempComposite)
+            {
+                foreach (var sprite in _sprites)
+                {
+                    if (string.Equals(sprite.ControlPath, singleComposite, StringComparison.OrdinalIgnoreCase))
+                    {
+                        SpriteCategoryToAssetMapping asset = null;
+
+                        foreach (var device in _controlTypes)
+                        {
+                            foreach (var spriteAsset in device.SpriteAssets)
+                            {
+                                if(spriteAsset.SpriteCategory == sprite.SpriteCategory)
+                                {
+                                    asset = spriteAsset;
+                                }
+                            }
+                        }
+
+                        if (asset == null)
+                        {
+                            continue;
+                        }
+
+                        resultingComposite.Add(string.Format(_spriteFormat, asset.SpriteAsset.name, sprite.SpriteName));
+                        Debug.Log("Adding " + string.Format(_spriteFormat, asset.SpriteAsset.name, sprite.SpriteName));
+                    }
+                }
+            }
+
+            return string.Join("",resultingComposite);
         }
 
         void PrintBinding(InputAction action, int bindingIndex)
