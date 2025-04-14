@@ -258,7 +258,7 @@ namespace games.noio.InputHints
                         }
 
                         resultingComposite.Add(string.Format(_spriteFormat, asset.SpriteAsset.name, sprite.SpriteName));
-                        Debug.Log("Adding " + string.Format(_spriteFormat, asset.SpriteAsset.name, sprite.SpriteName));
+                        //Debug.Log("Adding " + string.Format(_spriteFormat, asset.SpriteAsset.name, sprite.SpriteName));
                     }
                 }
             }
