@@ -52,11 +52,11 @@ namespace games.noio.InputHints
 
             _keyboardMouseControlType = _controlTypes.FirstOrDefault((x) => x.DeviceMatcher.IsMatch(("Keyboard")));
 
-            Debug.Log("KeyboardControlTypeDevice: " + _keyboardMouseControlType.InputControlScheme);
+            //Debug.Log("KeyboardControlTypeDevice: " + _keyboardMouseControlType.InputControlScheme);
 
             _lastControllerType = _controlTypes.FirstOrDefault(x => string.IsNullOrEmpty(x.Devices));
 
-            Debug.Log("_lastControllerType: " + _lastControllerType.InputControlScheme);
+            //Debug.Log("_lastControllerType: " + _lastControllerType.InputControlScheme);
         }
 
         void OnDisable()
